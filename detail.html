@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detail — Inkwell</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="nav-logo-icon"><i class="ti ti-book-2"></i></div>
+    <span class="nav-logo-text">Inkwell</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="search.html">Search</a></li>
+    <li><a href="library.html">My Library</a></li>
+  </ul>
+  <div class="nav-auth">
+    <button class="btn-ghost">Log in</button>
+    <button class="btn-primary">Sign up</button>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-section">
+
+    <a href="javascript:history.back()" style="display:inline-flex;align-items:center;gap:0.4rem;color:var(--ink-light);text-decoration:none;font-size:0.875rem;font-weight:500;margin-bottom:2rem;transition:color var(--transition);" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink-light)'">
+      <i class="ti ti-arrow-left"></i> Back
+    </a>
+
+    <div id="detail-content">
+      <div class="detail-hero">
+        <div class="skeleton skeleton-cover" style="width:200px;border-radius:var(--radius-lg);aspect-ratio:2/3;"></div>
+        <div style="flex:1;">
+          <div class="skeleton skeleton-line" style="height:2rem;width:70%;margin-bottom:1rem;"></div>
+          <div class="skeleton skeleton-line" style="width:40%;margin-bottom:2rem;"></div>
+          <div class="skeleton skeleton-line" style="height:80px;width:100%;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ADD TO LIBRARY MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Add to Library</div>
+        <div class="modal-subtitle" id="add-modal-title"></div>
+      </div>
+      <button class="modal-close" onclick="closeAddModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0.6rem;">
+      <button class="status-select-btn" onclick="addToLib('reading')"><i class="ti ti-book-open" style="margin-right:8px"></i>Reading</button>
+      <button class="status-select-btn" onclick="addToLib('completed')"><i class="ti ti-circle-check" style="margin-right:8px"></i>Completed</button>
+      <button class="status-select-btn" onclick="addToLib('plantoread')"><i class="ti ti-bookmark" style="margin-right:8px"></i>Plan to Read</button>
+      <button class="status-select-btn" onclick="addToLib('dropped')"><i class="ti ti-circle-x" style="margin-right:8px"></i>Dropped</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeAddModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="js/app.js"></script>
+<script>
+  const { id } = getParams();
+  let currentItem = null;
+
+  async function loadDetail() {
+    const content = document.getElementById('detail-content');
+    if (!id) { content.innerHTML = '<p style="color:var(--ink-light)">No item selected.</p>'; return; }
+
+    try {
+      let item;
+      if (id.startsWith('manga_')) {
+        const malId = id.replace('manga_', '');
+        item = await API.getMangaDetail(malId);
+      } else {
+        const googleId = id.replace('book_', '');
+        item = await API.getBookDetail(googleId);
+      }
+      currentItem = item;
+      document.title = `${item.title} — Inkwell`;
+      renderDetail(item);
+    } catch(e) {
+      content.innerHTML = '<p style="color:var(--ink-light);padding:2rem">Failed to load details. Please go back and try again.</p>';
+    }
+  }
+
+  function renderDetail(item) {
+    const inLib = DB.getEntry(item.id);
+    const statusLabel = { reading: 'Reading', completed: 'Completed', plantoread: 'Plan to Read', dropped: 'Dropped' };
+    const libBtn = inLib
+      ? `<div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+           <span style="display:inline-flex;align-items:center;gap:0.5rem;background:rgba(200,149,108,0.12);color:var(--warm-brown-dark);border:1px solid var(--warm-brown-light);border-radius:var(--radius-md);font-size:0.875rem;font-weight:500;padding:0.75rem 1.25rem;"><i class="ti ti-check"></i>${statusLabel[inLib.status]}</span>
+           <button class="status-select-btn" onclick="openAddModal()" style="font-size:0.875rem;padding:0.75rem 1.25rem;">Change status</button>
+         </div>`
+      : `<button class="add-lib-btn" onclick="openAddModal()"><i class="ti ti-plus"></i>Add to Library</button>`;
+
+    const stats = [];
+    if (item.chapters) stats.push({ val: item.chapters, label: 'Chapters' });
+    if (item.volumes) stats.push({ val: item.volumes, label: 'Volumes' });
+    if (item.pages) stats.push({ val: item.pages, label: 'Pages' });
+    if (item.score) stats.push({ val: '★ ' + item.score.toFixed(1), label: 'Score' });
+    if (item.year) stats.push({ val: item.year, label: 'Year' });
+
+    const chars = item.characters || [];
+    const charsHtml = chars.length ? `
+      <div class="detail-section">
+        <h2 class="detail-section-title">Characters</h2>
+        <div class="char-grid">
+          ${chars.map(c => `
+            <div class="char-card">
+              <img class="char-img" src="${c.character?.images?.jpg?.image_url || ''}" alt="${c.character?.name}" loading="lazy" onerror="this.style.background='var(--cream-dark)'">
+              <div class="char-name">${c.character?.name || ''}</div>
+            </div>`).join('')}
+        </div>
+      </div>` : '';
+
+    document.getElementById('detail-content').innerHTML = `
+      <div class="detail-hero fade-in">
+        <div>
+          ${item.cover
+            ? `<img class="detail-cover" src="${item.cover}" alt="${item.title}">`
+            : `<div class="detail-cover" style="display:flex;align-items:center;justify-content:center;background:var(--cream-dark);color:var(--ink-faint);font-size:3rem;">📖</div>`}
+        </div>
+        <div>
+          <div style="margin-bottom:0.5rem;">
+            <span class="badge ${item.status === 'Publishing' || item.status === 'Currently Airing' ? 'badge-publishing' : 'badge-finished'}">${item.status || 'Unknown'}</span>
+          </div>
+          <h1 class="detail-title">${item.title}</h1>
+          <p class="detail-author">by ${item.authors || 'Unknown author'}</p>
+          <div class="detail-tags">
+            ${(item.genres || []).map(g => `<span class="detail-tag">${g}</span>`).join('')}
+            <span class="detail-tag" style="background:rgba(200,149,108,0.1);border-color:var(--warm-brown-light);color:var(--warm-brown-dark);">${item.type}</span>
+          </div>
+          <div class="detail-stats">
+            ${stats.map(s => `<div class="detail-stat"><div class="detail-stat-val">${s.val ?? '—'}</div><div class="detail-stat-label">${s.label}</div></div>`).join('')}
+          </div>
+          ${libBtn}
+        </div>
+      </div>
+
+      ${item.synopsis ? `
+      <div class="detail-section fade-in">
+        <h2 class="detail-section-title">Synopsis</h2>
+        <p class="detail-synopsis">${item.synopsis.replace(/\[Written by.*?\]/g, '').trim()}</p>
+      </div>` : ''}
+
+      ${charsHtml}
+
+      <div class="detail-section fade-in">
+        <h2 class="detail-section-title">More like this</h2>
+        <p style="color:var(--ink-light);font-size:0.875rem;">
+          <a href="search.html?q=${encodeURIComponent((item.genres||[])[0]||item.title)}" style="color:var(--warm-brown);text-decoration:none;font-weight:500;">Browse ${(item.genres||[])[0] || 'similar'} titles →</a>
+        </p>
+      </div>`;
+  }
+
+  function openAddModal() {
+    if (!currentItem) return;
+    document.getElementById('add-modal-title').textContent = currentItem.title;
+    document.getElementById('add-modal').classList.add('open');
+  }
+
+  function closeAddModal() {
+    document.getElementById('add-modal').classList.remove('open');
+  }
+
+  function addToLib(status) {
+    if (!currentItem) return;
+    DB.addToLibrary(currentItem, status);
+    closeAddModal();
+    const labels = { reading: 'Reading', completed: 'Completed', plantoread: 'Plan to Read', dropped: 'Dropped' };
+    showToast(`Added to ${labels[status]}`);
+    renderDetail(currentItem);
+  }
+
+  document.getElementById('add-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('add-modal')) closeAddModal();
+  });
+
+  loadDetail();
+</script>
+</body>
+</html>

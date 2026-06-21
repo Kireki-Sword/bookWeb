@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search — Inkwell</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="nav-logo-icon"><i class="ti ti-book-2"></i></div>
+    <span class="nav-logo-text">Inkwell</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="search.html">Search</a></li>
+    <li><a href="library.html">My Library</a></li>
+  </ul>
+  <div class="nav-auth">
+    <button class="btn-ghost">Log in</button>
+    <button class="btn-primary">Sign up</button>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-section">
+
+    <div style="margin-bottom:1.5rem;">
+      <div class="media-tabs" id="type-tabs" style="display:inline-flex;">
+        <button class="media-tab active" data-type="all">All</button>
+        <button class="media-tab" data-type="manga">Manga</button>
+        <button class="media-tab" data-type="books">Books</button>
+        <button class="media-tab" data-type="comics">Comics</button>
+        <button class="media-tab" data-type="lightnovels">Light Novels</button>
+      </div>
+    </div>
+
+    <div class="filter-row" style="margin-bottom:1rem;">
+      <select class="filter-select" id="genre-filter">
+        <option value="">All Genres</option>
+        <option value="1">Action</option>
+        <option value="2">Adventure</option>
+        <option value="4">Comedy</option>
+        <option value="8">Drama</option>
+        <option value="10">Fantasy</option>
+        <option value="14">Horror</option>
+        <option value="7">Mystery</option>
+        <option value="22">Romance</option>
+        <option value="24">Sci-Fi</option>
+        <option value="36">Slice of Life</option>
+        <option value="37">Supernatural</option>
+        <option value="41">Thriller</option>
+      </select>
+      <select class="filter-select" id="sort-filter">
+        <option value="popularity">Most Popular</option>
+        <option value="score">Top Rated</option>
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+      </select>
+    </div>
+
+    <div style="margin-bottom:1.5rem;">
+      <div class="search-wrap">
+        <i class="ti ti-search search-icon"></i>
+        <input class="search-input" id="search-bar" type="text" placeholder="Search titles, authors, genres…" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="result-count" id="result-count" style="display:none;">
+      Showing <span id="count-num">0</span> results <span id="count-context"></span>
+    </div>
+
+    <div class="cards-grid" id="results-grid"></div>
+
+    <div class="pagination" id="pagination"></div>
+
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="js/app.js"></script>
+<script>
+  const params = getParams();
+  let currentPage = 1;
+  let currentQuery = params.q || '';
+  let currentType = params.type || 'all';
+  let currentGenre = '';
+  let currentSort = params.sort || 'popularity';
+  let totalResults = 0;
+
+  const grid = document.getElementById('results-grid');
+  const paginationEl = document.getElementById('pagination');
+  const searchBar = document.getElementById('search-bar');
+  const genreFilter = document.getElementById('genre-filter');
+  const sortFilter = document.getElementById('sort-filter');
+  const countEl = document.getElementById('result-count');
+  const countNum = document.getElementById('count-num');
+  const countCtx = document.getElementById('count-context');
+
+  if (currentQuery) searchBar.value = currentQuery;
+  sortFilter.value = currentSort;
+
+  document.querySelectorAll('.media-tab').forEach(tab => {
+    if (tab.dataset.type === currentType) tab.classList.add('active');
+    else tab.classList.remove('active');
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.media-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentType = tab.dataset.type;
+      currentPage = 1;
+      runSearch();
+    });
+  });
+
+  genreFilter.addEventListener('change', () => { currentGenre = genreFilter.value; currentPage = 1; runSearch(); });
+  sortFilter.addEventListener('change', () => { currentSort = sortFilter.value; currentPage = 1; runSearch(); });
+  searchBar.addEventListener('input', debounce(() => { currentQuery = searchBar.value.trim(); currentPage = 1; runSearch(); }, 500));
+
+  async function runSearch() {
+    renderSkeletons(grid, 20);
+    paginationEl.innerHTML = '';
+    countEl.style.display = 'none';
+
+    try {
+      let items = [], total = 0, pages = 1;
+      const isMangaType = currentType === 'all' || currentType === 'manga' || currentType === 'comics' || currentType === 'lightnovels';
+      const isBookType = currentType === 'all' || currentType === 'books';
+
+      if (currentType === 'books') {
+        const res = await API.searchBooks(currentQuery, currentGenre ? genreFilter.options[genreFilter.selectedIndex].text : '', currentSort, currentPage);
+        items = res.items; total = res.total; pages = res.pages;
+      } else {
+        const res = await API.searchManga(currentQuery, currentGenre, currentSort, currentPage);
+        items = res.items; total = res.total; pages = res.pages;
+      }
+
+      totalResults = total;
+      grid.innerHTML = items.length ? items.map(renderCard).join('') : `
+        <div class="empty-state" style="grid-column:1/-1">
+          <div class="empty-state-icon"><i class="ti ti-books"></i></div>
+          <h3>No results found</h3>
+          <p>Try a different search term or adjust your filters</p>
+        </div>`;
+
+      if (total > 0) {
+        countEl.style.display = 'block';
+        countNum.textContent = total.toLocaleString();
+        countCtx.textContent = currentQuery ? `for "${currentQuery}"` : '';
+        renderPagination(paginationEl, currentPage, pages, 'goToPage');
+      }
+    } catch(e) {
+      grid.innerHTML = '<p style="color:var(--ink-light);padding:2rem;grid-column:1/-1">Failed to load results. Please try again.</p>';
+    }
+  }
+
+  function goToPage(p) {
+    if (p < 1) return;
+    currentPage = p;
+    runSearch();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  runSearch();
+</script>
+</body>
+</html>

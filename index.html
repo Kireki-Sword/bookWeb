@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inkwell — Your Reading Universe</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="nav-logo-icon"><i class="ti ti-book-2"></i></div>
+    <span class="nav-logo-text">Inkwell</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="search.html">Search</a></li>
+    <li><a href="library.html">My Library</a></li>
+  </ul>
+  <div class="nav-auth">
+    <button class="btn-ghost">Log in</button>
+    <button class="btn-primary">Sign up</button>
+  </div>
+</nav>
+
+<div class="container">
+
+  <section class="hero fade-in">
+    <p class="hero-eyebrow">Your reading universe</p>
+    <h1 class="hero-title">Track every story<br>you've ever <em>loved</em></h1>
+    <p class="hero-sub">Manga, books, comics, light novels — all in one place. Search, discover, and build your personal reading library.</p>
+
+    <div style="max-width:580px;margin:0 auto 2rem;">
+      <div class="search-wrap">
+        <i class="ti ti-search search-icon"></i>
+        <input class="search-input" id="hero-search" type="text" placeholder="Search manga, books, comics…" autocomplete="off">
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:center;">
+      <div class="media-tabs" id="home-tabs">
+        <button class="media-tab active" data-type="manga">Manga</button>
+        <button class="media-tab" data-type="books">Books</button>
+        <button class="media-tab" data-type="comics">Comics</button>
+        <button class="media-tab" data-type="lightnovels">Light Novels</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-section fade-in-delay-1">
+    <div class="section-header">
+      <h2 class="section-title" id="trending-title">Trending Manga</h2>
+      <a href="search.html" class="section-link">See all →</a>
+    </div>
+    <div class="cards-grid" id="trending-grid"></div>
+  </section>
+
+  <section class="page-section fade-in-delay-2">
+    <div class="section-header">
+      <h2 class="section-title" id="top-title">Top Rated</h2>
+      <a href="search.html?sort=score" class="section-link">See all →</a>
+    </div>
+    <div class="cards-grid" id="top-grid"></div>
+  </section>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="js/app.js"></script>
+<script>
+  const trendingGrid = document.getElementById('trending-grid');
+  const topGrid = document.getElementById('top-grid');
+  const tabs = document.querySelectorAll('.media-tab');
+  const heroSearch = document.getElementById('hero-search');
+  let activeType = 'manga';
+
+  async function loadHome(type) {
+    renderSkeletons(trendingGrid, 12);
+    renderSkeletons(topGrid, 6);
+    document.getElementById('trending-title').textContent = `Trending ${capitalize(type)}`;
+    document.getElementById('top-title').textContent = `Top Rated ${capitalize(type)}`;
+
+    try {
+      if (type === 'manga' || type === 'comics' || type === 'lightnovels') {
+        const genreMap = { manga: '', comics: '&genres=7', lightnovels: '' };
+        const typeMap = { manga: 'manga', comics: 'manga', lightnovels: 'manga' };
+        const [trending, top] = await Promise.all([
+          fetch(`https://api.jikan.moe/v4/top/manga?filter=bypopularity&limit=12`).then(r=>r.json()),
+          fetch(`https://api.jikan.moe/v4/top/manga?filter=favorite&limit=6`).then(r=>r.json()),
+        ]);
+        trendingGrid.innerHTML = (trending.data||[]).map(m=>renderCard(normalizeManga(m))).join('');
+        topGrid.innerHTML = (top.data||[]).map(m=>renderCard(normalizeManga(m))).join('');
+      } else {
+        const [trending, top] = await Promise.all([
+          fetch(`https://www.googleapis.com/books/v1/volumes?q=bestseller&orderBy=relevance&maxResults=12&printType=books`).then(r=>r.json()),
+          fetch(`https://www.googleapis.com/books/v1/volumes?q=award+winning+novel&orderBy=relevance&maxResults=6&printType=books`).then(r=>r.json()),
+        ]);
+        trendingGrid.innerHTML = (trending.items||[]).map(b=>renderCard(normalizeBook(b))).join('');
+        topGrid.innerHTML = (top.items||[]).map(b=>renderCard(normalizeBook(b))).join('');
+      }
+    } catch(e) {
+      trendingGrid.innerHTML = '<p style="color:var(--ink-light);padding:2rem">Could not load content. Please try again.</p>';
+      topGrid.innerHTML = '';
+    }
+  }
+
+  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeType = tab.dataset.type;
+      loadHome(activeType);
+    });
+  });
+
+  heroSearch.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && heroSearch.value.trim()) {
+      navigate('search.html', { q: heroSearch.value.trim(), type: activeType });
+    }
+  });
+
+  loadHome('manga');
+</script>
+</body>
+</html>

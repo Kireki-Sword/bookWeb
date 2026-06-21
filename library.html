@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Library — Inkwell</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="nav-logo-icon"><i class="ti ti-book-2"></i></div>
+    <span class="nav-logo-text">Inkwell</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="search.html">Search</a></li>
+    <li><a href="library.html">My Library</a></li>
+  </ul>
+  <div class="nav-auth">
+    <button class="btn-ghost">Log in</button>
+    <button class="btn-primary">Sign up</button>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-section">
+
+    <div style="margin-bottom:2rem;">
+      <h1 style="font-family:var(--font-display);font-size:1.8rem;font-weight:600;color:var(--ink);letter-spacing:-0.02em;">My Library</h1>
+      <p style="color:var(--ink-light);font-size:0.9rem;margin-top:0.3rem;">Your personal reading collection</p>
+    </div>
+
+    <div class="status-tabs" id="status-tabs">
+      <button class="status-tab active" data-status="reading">Reading</button>
+      <button class="status-tab" data-status="completed">Completed</button>
+      <button class="status-tab" data-status="dropped">Dropped</button>
+      <button class="status-tab" data-status="plantoread">Plan to Read</button>
+    </div>
+
+    <div id="library-content"></div>
+
+  </div>
+</div>
+
+<!-- NOTES MODAL -->
+<div class="modal-overlay" id="notes-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Your Notes</div>
+        <div class="modal-subtitle" id="notes-item-title"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('notes-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Your Review & Thoughts</label>
+      <textarea class="modal-textarea" id="notes-text" placeholder="Write your thoughts about this title — what you loved, what didn't work, your overall impression…" style="min-height:160px;"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('notes-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveNotes()">Save Notes</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUOTES MODAL -->
+<div class="modal-overlay" id="quotes-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Favourite Quotes</div>
+        <div class="modal-subtitle" id="quotes-item-title"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('quotes-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="quotes-list" style="margin-bottom:1.25rem;"></div>
+    <div style="background:var(--cream-dark);border-radius:var(--radius-md);padding:1rem;border:1px solid var(--border);">
+      <p style="font-size:0.8rem;font-weight:600;color:var(--ink-mid);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;">Add a Quote</p>
+      <div class="modal-field">
+        <textarea class="modal-textarea" id="new-quote-text" placeholder="Paste or type the quote here…" style="min-height:80px;"></textarea>
+      </div>
+      <div class="modal-field" style="margin-bottom:0;">
+        <input class="modal-input" id="new-quote-chapter" placeholder="Chapter or volume (optional)" type="text">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('quotes-modal')">Close</button>
+      <button class="btn-primary" onclick="addQuote()"><i class="ti ti-plus" style="margin-right:4px"></i>Add Quote</button>
+    </div>
+  </div>
+</div>
+
+<!-- PANELS MODAL -->
+<div class="modal-overlay" id="panels-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Favourite Moments & Panels</div>
+        <div class="modal-subtitle" id="panels-item-title"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('panels-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="panels-list" style="margin-bottom:1.25rem;"></div>
+    <div style="background:var(--cream-dark);border-radius:var(--radius-md);padding:1rem;border:1px solid var(--border);">
+      <p style="font-size:0.8rem;font-weight:600;color:var(--ink-mid);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;">Add a Moment / Panel</p>
+      <div class="modal-field">
+        <label class="modal-label">Image URL (optional)</label>
+        <input class="modal-input" id="new-panel-url" placeholder="https://…" type="url">
+      </div>
+      <div class="modal-field" style="margin-bottom:0;">
+        <label class="modal-label">Description</label>
+        <textarea class="modal-textarea" id="new-panel-desc" placeholder="Describe this moment — why it hit you, what chapter it's from…" style="min-height:80px;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('panels-modal')">Close</button>
+      <button class="btn-primary" onclick="addPanel()"><i class="ti ti-plus" style="margin-right:4px"></i>Add Moment</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCORE MODAL -->
+<div class="modal-overlay" id="score-modal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Your Score</div>
+        <div class="modal-subtitle" id="score-item-title"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('score-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="score-picker" id="score-picker"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="clearScore()">Clear</button>
+      <button class="btn-primary" onclick="saveScore()">Save Score</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="js/app.js"></script>
+<script>
+  let activeStatus = 'reading';
+  let activeItemId = null;
+  let pendingScore = null;
+
+  const statusTabs = document.querySelectorAll('.status-tab');
+  statusTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      statusTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeStatus = tab.dataset.status;
+      renderLibrary();
+    });
+  });
+
+  function renderLibrary() {
+    const content = document.getElementById('library-content');
+    const entries = DB.getByStatus(activeStatus);
+
+    if (!entries.length) {
+      const labels = { reading: 'reading', completed: 'completed', dropped: 'dropped', plantoread: 'planning to read' };
+      content.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon"><i class="ti ti-bookmarks"></i></div>
+          <h3>Nothing here yet</h3>
+          <p>Search for titles and add them to your ${labels[activeStatus]} list.</p>
+          <a href="search.html" class="btn-primary" style="margin-top:1rem;display:inline-flex;">Browse titles</a>
+        </div>`;
+      return;
+    }
+
+    content.innerHTML = `
+      <table class="library-table">
+        <thead>
+          <tr>
+            <th style="width:40px">#</th>
+            <th style="width:55px"></th>
+            <th>Title</th>
+            <th style="min-width:280px">Actions</th>
+            <th style="width:80px;text-align:center">Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${entries.map((entry, i) => renderRow(entry, i + 1)).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function renderRow(entry, num) {
+    const hasNotes = !!entry.notes;
+    const hasQuotes = entry.quotes && entry.quotes.length > 0;
+    const hasPanels = entry.panels && entry.panels.length > 0;
+    const score = entry.score ? `<span>★ ${entry.score}</span>` : `<span class="score-dash">—</span>`;
+
+    return `
+      <tr class="library-row">
+        <td class="lib-num">${num}</td>
+        <td>
+          ${entry.cover
+            ? `<img class="lib-cover" src="${entry.cover}" alt="${entry.title}" loading="lazy">`
+            : `<div class="lib-cover" style="display:flex;align-items:center;justify-content:center;background:var(--cream-dark);color:var(--ink-faint);font-size:1.2rem;">📖</div>`}
+        </td>
+        <td>
+          <a class="lib-title" href="detail.html?id=${entry.id}">${entry.title}</a>
+          <div style="font-size:0.78rem;color:var(--ink-faint);margin-top:0.2rem;">${entry.type} · ${entry.year || ''}</div>
+        </td>
+        <td>
+          <div class="lib-actions">
+            <button class="lib-btn" onclick="navigate('detail.html',{id:'${entry.id}'})"><i class="ti ti-info-circle" style="margin-right:3px"></i>Details</button>
+            <button class="lib-btn ${hasNotes ? 'has-content' : ''}" onclick="openNotes('${entry.id}')"><i class="ti ti-notes" style="margin-right:3px"></i>Notes</button>
+            <button class="lib-btn ${hasQuotes ? 'has-content' : ''}" onclick="openQuotes('${entry.id}')"><i class="ti ti-quote" style="margin-right:3px"></i>Quotes${hasQuotes ? ` (${entry.quotes.length})` : ''}</button>
+            <button class="lib-btn ${hasPanels ? 'has-content' : ''}" onclick="openPanels('${entry.id}')"><i class="ti ti-photo" style="margin-right:3px"></i>Moments${hasPanels ? ` (${entry.panels.length})` : ''}</button>
+          </div>
+        </td>
+        <td style="text-align:center;">
+          <div class="score-display" onclick="openScore('${entry.id}')">${score}<i class="ti ti-pencil" style="font-size:0.75rem;color:var(--ink-faint)"></i></div>
+        </td>
+      </tr>`;
+  }
+
+  // ── MODALS ────────────────────────────────────────────────────────────────
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+  });
+
+  // NOTES
+  function openNotes(id) {
+    activeItemId = id;
+    const entry = DB.getEntry(id);
+    document.getElementById('notes-item-title').textContent = entry.title;
+    document.getElementById('notes-text').value = entry.notes || '';
+    openModal('notes-modal');
+  }
+
+  function saveNotes() {
+    const text = document.getElementById('notes-text').value.trim();
+    DB.updateEntry(activeItemId, { notes: text });
+    closeModal('notes-modal');
+    renderLibrary();
+    showToast('Notes saved');
+  }
+
+  // QUOTES
+  function openQuotes(id) {
+    activeItemId = id;
+    const entry = DB.getEntry(id);
+    document.getElementById('quotes-item-title').textContent = entry.title;
+    document.getElementById('new-quote-text').value = '';
+    document.getElementById('new-quote-chapter').value = '';
+    renderQuotesList(entry.quotes || []);
+    openModal('quotes-modal');
+  }
+
+  function renderQuotesList(quotes) {
+    const list = document.getElementById('quotes-list');
+    if (!quotes.length) { list.innerHTML = '<p style="color:var(--ink-faint);font-size:0.875rem;text-align:center;padding:1rem 0;">No quotes yet — add your first one below.</p>'; return; }
+    list.innerHTML = quotes.map((q, i) => `
+      <div class="quote-item">
+        <button class="quote-delete" onclick="deleteQuote(${i})"><i class="ti ti-trash"></i></button>
+        "${q.text}"
+        ${q.chapter ? `<div class="quote-item-meta">${q.chapter}</div>` : ''}
+      </div>`).join('');
+  }
+
+  function addQuote() {
+    const text = document.getElementById('new-quote-text').value.trim();
+    if (!text) { showToast('Please enter a quote first'); return; }
+    const chapter = document.getElementById('new-quote-chapter').value.trim();
+    const entry = DB.getEntry(activeItemId);
+    const quotes = [...(entry.quotes || []), { text, chapter }];
+    DB.updateEntry(activeItemId, { quotes });
+    document.getElementById('new-quote-text').value = '';
+    document.getElementById('new-quote-chapter').value = '';
+    renderQuotesList(quotes);
+    renderLibrary();
+    showToast('Quote added');
+  }
+
+  function deleteQuote(idx) {
+    const entry = DB.getEntry(activeItemId);
+    const quotes = entry.quotes.filter((_, i) => i !== idx);
+    DB.updateEntry(activeItemId, { quotes });
+    renderQuotesList(quotes);
+    renderLibrary();
+  }
+
+  // PANELS
+  function openPanels(id) {
+    activeItemId = id;
+    const entry = DB.getEntry(id);
+    document.getElementById('panels-item-title').textContent = entry.title;
+    document.getElementById('new-panel-url').value = '';
+    document.getElementById('new-panel-desc').value = '';
+    renderPanelsList(entry.panels || []);
+    openModal('panels-modal');
+  }
+
+  function renderPanelsList(panels) {
+    const list = document.getElementById('panels-list');
+    if (!panels.length) { list.innerHTML = '<p style="color:var(--ink-faint);font-size:0.875rem;text-align:center;padding:1rem 0;">No moments saved yet — add your first one below.</p>'; return; }
+    list.innerHTML = panels.map((p, i) => `
+      <div class="panel-item">
+        ${p.imageUrl ? `<img class="panel-img" src="${p.imageUrl}" alt="panel" onerror="this.style.display='none'">` : ''}
+        <div class="panel-desc" style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <span>${p.desc}</span>
+          <button onclick="deletePanel(${i})" style="background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:0.9rem;margin-left:0.5rem;"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>`).join('');
+  }
+
+  function addPanel() {
+    const desc = document.getElementById('new-panel-desc').value.trim();
+    if (!desc) { showToast('Please add a description'); return; }
+    const imageUrl = document.getElementById('new-panel-url').value.trim();
+    const entry = DB.getEntry(activeItemId);
+    const panels = [...(entry.panels || []), { imageUrl, desc }];
+    DB.updateEntry(activeItemId, { panels });
+    document.getElementById('new-panel-url').value = '';
+    document.getElementById('new-panel-desc').value = '';
+    renderPanelsList(panels);
+    renderLibrary();
+    showToast('Moment saved');
+  }
+
+  function deletePanel(idx) {
+    const entry = DB.getEntry(activeItemId);
+    const panels = entry.panels.filter((_, i) => i !== idx);
+    DB.updateEntry(activeItemId, { panels });
+    renderPanelsList(panels);
+    renderLibrary();
+  }
+
+  // SCORE
+  function openScore(id) {
+    activeItemId = id;
+    const entry = DB.getEntry(id);
+    pendingScore = entry.score;
+    document.getElementById('score-item-title').textContent = entry.title;
+    const picker = document.getElementById('score-picker');
+    picker.innerHTML = Array.from({ length: 10 }, (_, i) => i + 1).map(n => `
+      <button class="score-option ${entry.score === n ? 'selected' : ''}" onclick="selectScore(${n}, this)">${n}</button>`).join('');
+    openModal('score-modal');
+  }
+
+  function selectScore(n, el) {
+    pendingScore = n;
+    document.querySelectorAll('.score-option').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function saveScore() {
+    DB.updateEntry(activeItemId, { score: pendingScore });
+    closeModal('score-modal');
+    renderLibrary();
+    showToast(pendingScore ? `Score set to ${pendingScore}/10` : 'Score cleared');
+  }
+
+  function clearScore() {
+    pendingScore = null;
+    document.querySelectorAll('.score-option').forEach(b => b.classList.remove('selected'));
+  }
+
+  renderLibrary();
+</script>
+</body>
+</html>
