@@ -253,10 +253,15 @@ nav {
   font-weight: 500;
   color: var(--ink);
   line-height: 1.4;
+  
+  /* Line Clamp Bundle */
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  /* autoprefixer: ignore next */
   -webkit-box-orient: vertical;
   overflow: hidden;
+  white-space: normal; /* Prevents nowrap bugs */
+  height: auto;        /* Prevents layout constraints */
 }
 
 .card-meta {
